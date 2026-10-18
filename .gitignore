@@ -1,0 +1,17 @@
+# environment / IDE / agent
+.venv/
+.idea/
+.claude/
+__pycache__/
+*.pyc
+
+# dataset: download separately (studentVle.csv is 454 MB, over GitHub's limit) — see README
+data/
+
+# intermediate pipeline outputs, rebuilt by prototype/run_all.py
+prototype/*.parquet
+
+# course materials and drafts (not for a public repo)
+*.pdf
+ДЗ3_каркас.md
+ЗАДАНИЕ_лендинг.md

@@ -1,0 +1,16 @@
+[project]
+name = "week-3"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "lightgbm>=4.7.0",
+    "matplotlib>=3.11.2",
+    "pandas>=3.0.6",
+    "pyarrow>=26.0.0",
+    "scikit-learn>=1.9.1",
+]
+
+[dependency-groups]
+dev = [
+    "playwright>=1.64.0",
+]

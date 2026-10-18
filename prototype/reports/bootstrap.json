@@ -1,0 +1,55 @@
+{
+ "n_students": 15608,
+ "n_churn_events": 2984,
+ "B": 1000,
+ "target_gain": 0.2,
+ "loss_caught": {
+  "baseline_7days": [
+   0.3454,
+   0.3629,
+   0.3817
+  ],
+  "lgbm_activity": [
+   0.3462,
+   0.3633,
+   0.3813
+  ],
+  "lgbm_activity_grades": [
+   0.4881,
+   0.5086,
+   0.5285
+  ],
+  "logreg_activity_grades": [
+   0.4896,
+   0.5092,
+   0.5284
+  ]
+ },
+ "gain_vs_baseline": {
+  "lgbm_activity": [
+   -0.0523,
+   0.0012,
+   0.0616
+  ],
+  "lgbm_activity_grades": [
+   0.3266,
+   0.4005,
+   0.4834
+  ],
+  "logreg_activity_grades": [
+   0.3258,
+   0.4025,
+   0.4858
+  ]
+ },
+ "p_gain_ge_target": {
+  "lgbm_activity": 0.0,
+  "lgbm_activity_grades": 1.0,
+  "logreg_activity_grades": 1.0
+ },
+ "logreg_vs_lgbm_grades": [
+  -0.0301,
+  0.0013,
+  0.0332
+ ]
+}

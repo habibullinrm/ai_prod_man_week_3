@@ -1,0 +1,716 @@
+<title>Прогноз ухода: прототип</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Демо прототипа Gate 3: список учеников под риском ухода для куратора, проверка на OULAD">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Spectral:wght@500;600;700&display=swap">
+<style>
+/* Layout: a single reading column (max 1080px) that tells the story top to bottom;
+   data blocks (list, charts) widen to the full column, prose stays near 65ch. */
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --sunk: #eceef2;
+  --ink: #161b26;
+  --ink-2: #485064;
+  --muted: #737b8e;
+  --line: #dadee6;
+  --accent: #6a3d9a;          /* UI accent: plum, kept apart from the four model colours */
+  --accent-soft: #efe8f7;
+  --ok: #1d7a3b;   --ok-bg: #e3f3e8;
+  --warn: #9a5b00; --warn-bg: #fbefd9;
+  --bad: #b3261e;  --bad-bg: #fbe5e3;
+  --na: #5f6675;   --na-bg: #eceef2;
+  --bar: #485064;
+  --font-display: "Spectral", Georgia, "Times New Roman", serif;
+  --font-body: "Golos Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --step--1: 0.8125rem; --step-0: 1rem; --step-1: 1.1875rem; --step-2: 1.5rem; --step-3: 2.125rem; --step-4: 2.875rem;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11141a; --surface: #191d25; --sunk: #222731; --ink: #eceef2; --ink-2: #b6bcc8; --muted: #8b92a1;
+    --line: #2d333e; --accent: #b892e3; --accent-soft: #2a2236;
+    --ok: #5cc985; --ok-bg: #16301f; --warn: #e5a947; --warn-bg: #33270f; --bad: #f07a6e; --bad-bg: #3a1a17;
+    --na: #a3a9b6; --na-bg: #262b35; --bar: #aab1bf; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11141a; --surface: #191d25; --sunk: #222731; --ink: #eceef2; --ink-2: #b6bcc8; --muted: #8b92a1;
+  --line: #2d333e; --accent: #b892e3; --accent-soft: #2a2236;
+  --ok: #5cc985; --ok-bg: #16301f; --warn: #e5a947; --warn-bg: #33270f; --bad: #f07a6e; --bad-bg: #3a1a17;
+  --na: #a3a9b6; --na-bg: #262b35; --bar: #aab1bf; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: var(--step-0); line-height: 1.55; margin: 0; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; line-height: 1.15; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2rem, 6vw, var(--step-4)); }
+h2 { font-size: clamp(1.6rem, 4vw, var(--step-3)); }
+h3 { font-size: var(--step-1); font-family: var(--font-body); font-weight: 600; letter-spacing: 0; }
+p { margin: 0; }
+.lede { font-size: var(--step-1); color: var(--ink-2); max-width: 62ch; }
+.eyebrow { font-family: var(--font-mono); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
+.small { font-size: var(--step--1); color: var(--muted); }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.num { font-variant-numeric: tabular-nums; }
+a { color: var(--accent); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code { font-family: var(--font-mono); font-size: 0.9em; background: var(--sunk); padding: 0.1em 0.35em; border-radius: 4px; }
+
+/* header */
+.hero { padding-block: 48px 32px; display: grid; gap: 20px; }
+.hero .meta { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--muted); font-size: var(--step--1); }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 8px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.tile .k { font-size: var(--step--1); color: var(--ink-2); }
+.tile .v { font-family: var(--font-display); font-size: var(--step-3); line-height: 1.05; font-weight: 600; }
+.tile .v small { font-family: var(--font-body); font-size: var(--step-0); font-weight: 500; color: var(--muted); }
+.tile .s { font-size: var(--step--1); color: var(--muted); }
+.vs { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.vs .from { color: var(--muted); font-family: var(--font-display); font-size: var(--step-2); }
+.vs .arrow { color: var(--muted); }
+@media (max-width: 760px) { .tiles { grid-template-columns: 1fr; } }
+
+nav.toc { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+nav.toc .wrap { display: flex; gap: 4px 18px; overflow-x: auto; padding-block: 10px; scrollbar-width: none; }
+nav.toc a { white-space: nowrap; color: var(--ink-2); text-decoration: none; font-size: var(--step--1); padding: 2px 0; }
+nav.toc a:hover { color: var(--accent); }
+
+section { padding-block: 56px 8px; scroll-margin-top: 48px; }
+.sec-head { display: grid; gap: 10px; margin-bottom: 24px; }
+.sec-head .lede { font-size: var(--step-0); }
+
+/* how it works */
+.timeline { display: grid; grid-template-columns: 1.4fr auto 1fr; gap: 0; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+.tl-cell { padding: 16px 18px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.tl-past { background: var(--sunk); }
+.tl-t { background: var(--accent); color: var(--surface); text-align: center; padding: 16px 14px; display: grid; place-content: center; gap: 2px; }
+.tl-t b { font-family: var(--font-display); font-size: var(--step-2); }
+.tl-future { background: repeating-linear-gradient(135deg, var(--surface) 0 8px, var(--accent-soft) 8px 16px); }
+.tl-cell .lab { font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted); }
+@media (max-width: 640px) { .timeline { grid-template-columns: 1fr; } }
+.snaps { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+.chip { font-family: var(--font-mono); font-size: var(--step--1); border: 1px solid var(--line); background: var(--surface); padding: 3px 9px; border-radius: 999px; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+.fact { border-top: 2px solid var(--ink); padding-top: 10px; display: grid; gap: 4px; min-width: 0; }
+.fact b { font-weight: 600; }
+.fact p { color: var(--ink-2); font-size: 0.9375rem; }
+@media (max-width: 760px) { .facts { grid-template-columns: 1fr; } }
+
+/* curator list */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.controls { display: flex; flex-wrap: wrap; gap: 14px 22px; padding: 16px 18px; border-bottom: 1px solid var(--line); align-items: end; }
+.ctl { display: grid; gap: 4px; min-width: 0; max-width: 100%; }
+.ctl select { min-width: 0; width: 100%; }
+@media (max-width: 600px) { .controls .ctl { flex: 1 1 100%; } }
+.ctl label, .ctl .lab { font-size: var(--step--1); color: var(--muted); }
+select, .seg button, .btn { font: inherit; font-size: 0.9375rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
+select { padding-right: 28px; max-width: 100%; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+input[type=range] { width: 200px; max-width: 100%; accent-color: var(--accent); }
+.budget-val { font-family: var(--font-mono); font-weight: 600; }
+.btn { cursor: pointer; background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 500; }
+.btn[aria-pressed="true"] { background: var(--surface); color: var(--accent); }
+.summary { padding: 16px 18px; display: grid; gap: 10px; border-bottom: 1px solid var(--line); }
+.summary p { font-size: var(--step-1); max-width: 70ch; }
+.summary b { font-variant-numeric: tabular-nums; font-weight: 600; }
+.summary .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.table-scroll { overflow: auto; }
+.list-scroll { max-height: 560px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9375rem; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+thead th { position: sticky; top: 0; background: var(--surface); font-weight: 500; color: var(--muted); font-size: var(--step--1); z-index: 1; }
+td.num, th.num { text-align: right; white-space: nowrap; }
+.list-table { min-width: 820px; }
+.reasons { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; color: var(--ink-2); font-size: 0.875rem; }
+.reasons li::before { content: "· "; color: var(--muted); }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8125rem; font-weight: 500; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill.ok { color: var(--ok); background: var(--ok-bg); }
+.pill.warn { color: var(--warn); background: var(--warn-bg); }
+.pill.bad { color: var(--bad); background: var(--bad-bg); }
+.pill.na { color: var(--na); background: var(--na-bg); }
+.yes { color: var(--ink); font-weight: 500; }
+.no { color: var(--muted); }
+.riskbar { display: inline-block; width: 46px; height: 6px; background: var(--sunk); border-radius: 3px; vertical-align: middle; margin-left: 8px; overflow: hidden; }
+.riskbar i { display: block; height: 100%; }
+.table-foot { padding: 10px 18px; }
+
+/* cases */
+.cases { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 960px) { .cases { grid-template-columns: 1fr; } }
+.case { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.case-head { display: grid; gap: 6px; }
+.case-head .title-row { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+.case-head h3 { font-family: var(--font-display); font-size: var(--step-2); }
+.case-meta { font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted); }
+.verdicts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.verdict { background: var(--sunk); border-radius: 8px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0; }
+.verdict .who { font-size: var(--step--1); color: var(--muted); }
+.verdict .what { font-weight: 600; }
+.verdict .detail { font-size: 0.875rem; color: var(--ink-2); }
+@media (max-width: 480px) { .verdicts { grid-template-columns: 1fr; } }
+.takeaway { border-left: 3px solid var(--accent); padding-left: 12px; color: var(--ink); }
+.case .why h4 { margin: 0 0 4px; font-size: var(--step--1); font-weight: 500; color: var(--muted); }
+
+/* charts */
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { fill: var(--muted); font-family: var(--font-body); font-size: 12px; }
+.chart .axis line, .chart .grid line { stroke: var(--line); }
+.chart .lbl { fill: var(--ink-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: var(--step--1); color: var(--ink-2); margin-bottom: 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend svg { flex: none; }
+.chart-box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; min-width: 0; display: grid; gap: 6px; }
+.chart-box h3 { margin-bottom: 2px; }
+.chart-box .thesis { color: var(--ink-2); font-size: 0.9375rem; max-width: 70ch; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+.stack { display: grid; gap: 16px; }
+.tip { position: fixed; pointer-events: none; z-index: 20; background: var(--ink); color: var(--bg); font-size: 0.8125rem; padding: 8px 10px; border-radius: 6px; line-height: 1.45; max-width: 260px; box-shadow: 0 4px 16px rgb(0 0 0 / 0.18); }
+.tip .sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+.tip b { font-family: var(--font-mono); }
+
+/* evidence table */
+.ev-table { min-width: 760px; }
+.ev-table td:first-child { font-weight: 500; }
+.ev-table .note { display: block; font-size: var(--step--1); color: var(--muted); font-weight: 400; margin-top: 2px; }
+
+/* forest */
+.forest { display: grid; gap: 14px; }
+.f-row { display: grid; gap: 4px; }
+.f-row .f-lab { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 0.9375rem; }
+.f-row .f-val { font-variant-numeric: tabular-nums; font-size: var(--step--1); color: var(--ink-2); }
+.f-sep { border-top: 1px dashed var(--line); padding-top: 12px; }
+
+/* limits & repro */
+.limits { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; max-width: 820px; }
+.limits li { padding: 14px 0; border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
+.limits li b { font-weight: 600; }
+.limits li span { color: var(--ink-2); }
+pre.cmd { background: var(--sunk); border-radius: 8px; padding: 14px 16px; overflow-x: auto; font-family: var(--font-mono); font-size: 0.875rem; line-height: 1.6; margin: 0; }
+.repro { display: grid; gap: 14px; max-width: 820px; min-width: 0; }
+.repro a { overflow-wrap: anywhere; }
+
+footer { margin-top: 64px; border-top: 1px solid var(--line); padding-block: 24px 40px; color: var(--muted); font-size: var(--step--1); }
+footer .wrap { display: grid; gap: 6px; }
+</style>
+<!--/head-->
+<header class="wrap hero">
+  <div class="eyebrow">Nastavnik · кейс B «отток → удержание» · Gate 3</div>
+  <h1>Кому из учеников куратору позвонить сегодня</h1>
+  <p class="lede">В день продления модель ранжирует учеников по ожидаемой потере: вероятность уйти в ближайшие 30 дней, умноженная на оставшиеся платежи. Куратор берёт верх списка. Проверка на открытых данных Open University (OULAD), потому что своих логов у Nastavnik пока нет.</p>
+  <div class="tiles" id="tiles"></div>
+  <div class="meta" id="hero-meta"></div>
+</header>
+
+<nav class="toc" aria-label="Разделы">
+  <div class="wrap">
+    <a href="#how">Как устроено</a>
+    <a href="#list">Список куратора</a>
+    <a href="#cases">Четыре случая</a>
+    <a href="#evidence">Доказательства</a>
+    <a href="#limits">Ограничения</a>
+    <a href="#repro">Как воспроизвести</a>
+  </div>
+</nav>
+
+<main>
+<section id="how" class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">1 · Как устроен прототип</div>
+    <h2>Модель видит только прошлое</h2>
+    <p class="lede">В день продления модель видит только то, что уже произошло, и предсказывает уход в следующие 30 дней. Так она работала бы и у Nastavnik.</p>
+  </div>
+  <div class="timeline" role="img" aria-label="Схема одного снимка: признаки до дня t, день прогноза t, окно метки от t до t плюс 30 дней">
+    <div class="tl-cell tl-past">
+      <span class="lab">дни &lt; t</span>
+      <b>Признаки</b>
+      <p class="small">Клики и дни с заходами за 7, 14 и 30 дней, дни без заходов, сданные, пропущенные и просроченные задания, баллы.</p>
+    </div>
+    <div class="tl-t"><span class="small" style="color:inherit">день прогноза</span><b>t</b></div>
+    <div class="tl-cell tl-future">
+      <span class="lab">(t, t + 30]</span>
+      <b>Окно метки</b>
+      <p class="small">Метка 1, если ученик отчислился в эти 30 дней. На момент прогноза её никто не знает.</p>
+    </div>
+  </div>
+  <div class="snaps" id="snaps"><span class="small">Снимки на дни курса:</span></div>
+  <div class="facts" id="facts"></div>
+</section>
+
+<section id="list" class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">2 · Список куратора</div>
+    <h2>Это и есть продукт</h2>
+    <p class="lede">Куратор выбирает поток, день и сколько учеников готов обработать, и получает список: кому звонить сегодня. Сначала вы видите то же, что куратор. Исход открывается кнопкой.</p>
+  </div>
+  <div class="panel">
+    <div class="controls">
+      <div class="ctl"><label for="ctl-stream">Поток 2014 года</label><select id="ctl-stream"></select></div>
+      <div class="ctl"><label for="ctl-t">День прогноза t</label><select id="ctl-t"></select></div>
+      <div class="ctl"><label for="ctl-budget">Бюджет: <span class="budget-val" id="budget-val">20%</span> потока</label><input id="ctl-budget" type="range" min="5" max="50" step="5" value="20"></div>
+      <div class="ctl"><span class="lab" id="ctl-mode-lab">Список строит</span>
+        <div class="seg" role="group" aria-labelledby="ctl-mode-lab">
+          <button type="button" id="mode-model" aria-pressed="true">модель</button>
+          <button type="button" id="mode-rule" aria-pressed="false">правило «7 дней»</button>
+        </div>
+      </div>
+    </div>
+    <div class="summary">
+      <p id="list-summary"></p>
+      <div class="row">
+        <span class="small" id="list-note"></span>
+        <button type="button" class="btn" id="reveal" aria-pressed="false">Показать, что было на самом деле</button>
+      </div>
+    </div>
+    <div class="table-scroll list-scroll" tabindex="0" aria-label="Список учеников">
+      <table class="list-table">
+        <thead><tr><th class="num">#</th><th>Ученик (id OULAD)</th><th class="num">Риск</th><th class="num">Ожидаемая потеря</th><th>Причины (по модели)</th><th id="th-other">Есть в списке правила</th><th data-outcome hidden>Исход</th></tr></thead>
+        <tbody id="list-body"></tbody>
+      </table>
+    </div>
+    <div class="table-foot small" id="table-foot"></div>
+  </div>
+</section>
+
+<section id="cases" class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">3 · Четыре случая</div>
+    <h2>Где модель права и где ошибается</h2>
+    <p class="lede">Четыре ученика из тех же потоков. Скрипт отбирает их по фиксированным правилам (они под каждой карточкой), без ручного выбора. Серая часть графика после дня t — то, чего модель не видела.</p>
+  </div>
+  <div class="cases" id="cases-grid"></div>
+</section>
+
+<section id="evidence" class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">4 · Доказательства</div>
+    <h2>Прототип против таргетов Gate 2</h2>
+    <p class="lede" id="ev-lede"></p>
+  </div>
+  <div class="stack">
+    <div class="chart-box">
+      <h3>Таргеты Gate 2 и факт</h3>
+      <p class="thesis">Статусы — для продуктовой модели (логистическая регрессия). LightGBM с теми же признаками стоит рядом для сравнения.</p>
+      <div class="table-scroll" tabindex="0" aria-label="Таблица таргетов"><table class="ev-table" id="ev-table"></table></div>
+    </div>
+    <div class="chart-box">
+      <h3>Бюджет и пойманная потеря</h3>
+      <p class="thesis">Модель на одних кликах совпадает с правилом. Прирост даёт только добавление оценок.</p>
+      <div class="legend" id="lg-gain"></div>
+      <div id="ch-gain"></div>
+      <p class="small">По горизонтали — доля учеников в списке на каждом снимке, по вертикали — доля пойманной потери в рублях. Наведите курсор, чтобы увидеть значения.</p>
+    </div>
+    <div class="grid-2">
+      <div class="chart-box">
+        <h3>Пойманная потеря по снимкам</h3>
+        <p class="thesis">Прирост держится на всех этапах курса.</p>
+        <div class="legend" id="lg-t"></div>
+        <div id="ch-t"></div>
+        <p class="small" id="t-note"></p>
+      </div>
+      <div class="chart-box">
+        <h3>Прирост к правилу, 95% ДИ</h3>
+        <p class="thesis">Простая модель даёт то же, что бустинг: ценность в данных об учёбе, а не в сложности модели.</p>
+        <div class="forest" id="ch-forest"></div>
+        <p class="small" id="forest-note"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="limits" class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">5 · Ограничения</div>
+    <h2>Что прототип не доказывает</h2>
+    <p class="lede">Прототип показывает, что сигнал в данных об учёбе есть и модель его находит. Ниже то, что он не проверяет.</p>
+  </div>
+  <ul class="limits">
+    <li><b>OULAD — это не ученики Nastavnik.</b><span>Там взрослые студенты, оплата за курс целиком, нет родителя. Перенос не доказан, нужна проверка на своих логах (Gate 4).</span></li>
+    <li><b>Уходы в первые 30 дней не покрываются.</b><span>Первый снимок делается на 30-й день курса.</span></li>
+    <li><b>Модель предсказывает факт ухода, но не его причину.</b><span>Действие под причину — отдельный шаг.</span></li>
+    <li><b>Эффект удержания не измерен.</b><span>Нужна контрольная группа без действия (Gate 5).</span></li>
+    <li><b>Демография в модель сознательно не включена.</b><span>Пол, регион, образование, возраст, инвалидность и индекс достатка не используются и на странице не показаны.</span></li>
+  </ul>
+</section>
+
+<section id="repro" class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">6 · Как воспроизвести</div>
+    <h2>Все числа пересчитываются одной командой</h2>
+  </div>
+  <div class="repro">
+    <pre class="cmd">cd week_3
+uv sync
+uv run python prototype/run_all.py --rebuild   # снимки → модели → бутстрап → графики → data.json
+uv run python landing/build_page.py            # data.json → landing/index.html</pre>
+    <p>Репозиторий: <a href="https://github.com/habibullinrm/ai_prod_man_week_3" rel="noopener">https://github.com/habibullinrm/ai_prod_man_week_3</a></p>
+    <p class="small" id="built"></p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Источник данных: Kuzilek J., Hlosta M., Zdrahal Z. Open University Learning Analytics dataset. Scientific Data 4, 170171 (2017). Лицензия CC BY 4.0.</p>
+    <p>Учебный прототип, ЦУ, курс «Управление ML-продуктами».</p>
+  </div>
+</footer>
+
+<div class="tip" id="tip" hidden></div>
+
+<script type="application/json" id="data">__DATA__</script>
+<script>
+(function () {
+  "use strict";
+  const D = JSON.parse(document.getElementById("data").textContent);
+  const M = D.models, ORDER = D.order, PROD = D.product, BASE = D.baseline;
+  const LGBM = "lgbm_activity_grades";
+  const $ = (id) => document.getElementById(id);
+
+  // ---------- formatting (ru) ----------
+  const nf = (d) => new Intl.NumberFormat("ru-RU", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const num = (x, d = 0) => nf(d).format(x);
+  const pct = (x, d = 1) => num(x * 100, d) + "%";
+  const spct = (x, d = 0) => (x >= 0 ? "+" : "−") + num(Math.abs(x) * 100, d) + "%";
+  const rub = (x) => num(Math.round(x)) + " ₽";
+  const days = (n) => { const a = Math.abs(n) % 100, b = a % 10; return n + " " + (a > 10 && a < 20 ? "дней" : b === 1 ? "день" : b >= 2 && b <= 4 ? "дня" : "дней"); };
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const short = { baseline_7days: "Правило «7 дней»", lgbm_activity: "LightGBM: активность", lgbm_activity_grades: "LightGBM: активность + оценки", logreg_activity_grades: "LogReg (сплайны): активность + оценки" };
+
+  // ---------- svg helpers ----------
+  const NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function text(parent, x, y, s, attrs) { const t = el("text", Object.assign({ x, y }, attrs || {}), parent); t.textContent = s; return t; }
+  function swatch(color, dashed, kind) {
+    if (kind === "dot") return `<svg width="12" height="12" aria-hidden="true"><circle cx="6" cy="6" r="4.5" fill="${color}"/></svg>`;
+    if (kind === "ring") return `<svg width="12" height="12" aria-hidden="true"><circle cx="6" cy="6" r="4" fill="none" stroke="${color}" stroke-width="1.6"/></svg>`;
+    if (kind === "bar") return `<svg width="12" height="12" aria-hidden="true"><rect x="2" y="1" width="8" height="10" rx="1.5" fill="${color}"/></svg>`;
+    if (kind === "vline") return `<svg width="12" height="14" aria-hidden="true"><line x1="6" y1="0" x2="6" y2="14" stroke="${color}" stroke-width="2" ${dashed ? 'stroke-dasharray="3 2"' : ""}/></svg>`;
+    return `<svg width="22" height="10" aria-hidden="true"><line x1="1" y1="5" x2="21" y2="5" stroke="${color}" stroke-width="2.5" ${dashed ? 'stroke-dasharray="5 3"' : ""} stroke-linecap="round"/></svg>`;
+  }
+  function modelLegend(target, keys) {
+    $(target).innerHTML = keys.map((k) => `<span>${swatch(M[k].color, k === BASE)}${esc(M[k].label)}${k === PROD ? " · продукт" : ""}</span>`).join("");
+  }
+
+  // ---------- tooltip ----------
+  const tip = $("tip");
+  function showTip(html, x, y) {
+    tip.innerHTML = html; tip.hidden = false;
+    const r = tip.getBoundingClientRect();
+    let left = x + 14, top = y + 14;
+    if (left + r.width > window.innerWidth - 8) left = x - r.width - 14;
+    if (top + r.height > window.innerHeight - 8) top = y - r.height - 14;
+    tip.style.left = Math.max(8, left) + "px"; tip.style.top = Math.max(8, top) + "px";
+  }
+  const hideTip = () => { tip.hidden = true; };
+
+  // ---------- 0. header ----------
+  const P = M[PROD], B = M[BASE];
+  $("tiles").innerHTML = `
+    <div class="tile"><span class="k">Доля пойманной потери в топ-${pct(D.top, 0)} списка</span>
+      <div class="vs"><span class="from num">${pct(B.loss_caught_top20)}</span><span class="arrow" aria-hidden="true">→</span><span class="v num" data-check="prod-loss">${pct(P.loss_caught_top20)}</span></div>
+      <span class="s">правило «${D.rule_days} дней без заходов» → продуктовая модель</span></div>
+    <div class="tile"><span class="k">Прирост к правилу</span>
+      <span class="v num" data-check="prod-gain">${spct(P.gain_ci[1])}</span>
+      <span class="s">95% ДИ: от ${spct(P.gain_ci[0])} до ${spct(P.gain_ci[2])}, цель Gate 2 — ${spct(D.bootstrap.target_gain)}</span></div>
+    <div class="tile"><span class="k">Запас времени до ухода у пойманных</span>
+      <span class="v num" data-check="prod-lead">${num(P.median_lead_days)} <small>дн., медиана</small></span>
+      <span class="s">столько дней у куратора на разговор</span></div>`;
+  $("hero-meta").innerHTML = `<span>Проверка: ${num(D.test.students)} учеников ${D.test_year} года, ${num(D.test.churn_events)} уходов</span><span>Обучение: потоки ${D.train_year} года</span><span>Сборка ${D.built}</span>`;
+
+  // ---------- 1. how ----------
+  $("snaps").insertAdjacentHTML("beforeend", D.snapshots.map((t) => `<span class="chip">${t}</span>`).join(""));
+  $("facts").innerHTML = `
+    <div class="fact"><b>Обучение ${D.train_year}, проверка ${D.test_year}</b><p>Модели учатся на потоках ${D.train_year} года и проверяются на потоках следующего года, которых не видели. ${num(D.test.rows)} снимков в проверке.</p></div>
+    <div class="fact"><b>Уходы до старта исключены</b><p>Это ${pct(D.pre_start_share_of_withdrawals, 0)} всех уходов. Активности у таких учеников нет, удерживать некого: это задача продаж, а не удержания.</p></div>
+    <div class="fact"><b>Ожидаемая потеря</b><p>Вероятность ухода × оставшиеся платежи. Условная цена Nastavnik — ${rub(D.price_rub_month)} в месяц.</p></div>`;
+
+  // ---------- 2. curator list ----------
+  const S = Object.fromEntries(D.streams.map((s) => [s.key, s]));
+  const st = { stream: D.default_stream, t: null, budget: 0.2, mode: "model", reveal: false };
+  const selS = $("ctl-stream"), selT = $("ctl-t"), rng = $("ctl-budget");
+  selS.innerHTML = D.streams.map((s) => `<option value="${s.key}">${s.key} · ${num(s.students)} учеников, ${num(s.churn)} уходов</option>`).join("");
+  selS.value = st.stream;
+  function fillT() {
+    const snaps = S[st.stream].snapshots;
+    selT.innerHTML = snaps.map((s) => `<option value="${s.t}">день ${s.t} · ${num(s.n)} учеников</option>`).join("");
+    if (st.t === null || !snaps.some((s) => s.t === st.t)) st.t = snaps.reduce((a, b) => (b.churn > a.churn ? b : a)).t;
+    selT.value = String(st.t);
+  }
+  function caughtShare(snap, rankKey, k) {
+    const r = snap.rows; let c = 0;
+    for (let i = 0; i < r.id.length; i++) if (r[rankKey][i] <= k && r.y[i]) c += r.value[i];
+    return c / snap.loss_total;
+  }
+  function renderList() {
+    const snap = S[st.stream].snapshots.find((s) => s.t === st.t);
+    const r = snap.rows, k = Math.ceil(st.budget * snap.n);
+    const mine = st.mode === "model" ? "rm" : "rr", other = st.mode === "model" ? "rr" : "rm";
+    const idx = [];
+    for (let i = 0; i < r.id.length; i++) if (r[mine][i] <= k) idx.push(i);
+    idx.sort((a, b) => r[mine][a] - r[mine][b]);
+    let K = 0; idx.forEach((i) => { K += r.y[i]; });
+    const X = caughtShare(snap, mine, k), Y = caughtShare(snap, other, k);
+    const otherName = st.mode === "model" ? "правило" : "модель";
+    $("list-summary").innerHTML = `В списке <b>${num(idx.length)}</b> учеников из ${num(snap.n)}; из них ушли в ближайшие 30 дней <b>${num(K)}</b>; поймано <b>${pct(X)}</b> потери. ${otherName[0].toUpperCase() + otherName.slice(1)} при том же бюджете — <b>${pct(Y)}</b>.`;
+    $("list-note").textContent = `Поток ${st.stream}, день ${st.t}: всего ушли ${num(snap.churn)} учеников. Места считаются внутри потока.`;
+    $("th-other").textContent = st.mode === "model" ? "Есть в списке правила" : "Есть в списке модели";
+    document.querySelectorAll("[data-outcome]").forEach((e) => { e.hidden = !st.reveal; });
+    const maxP = Math.max(...idx.map((i) => r.p[i]), 0.01);
+    $("list-body").innerHTML = idx.map((i, n) => {
+      const inOther = r[other][i] <= k;
+      const out = r.y[i] ? `<span class="pill bad">ушёл через ${days(r.dtl[i])}</span>` : `<span class="pill na">остался</span>`;
+      return `<tr><td class="num small">${n + 1}</td><td class="mono">${r.id[i]}</td>
+        <td class="num">${pct(r.p[i])}<span class="riskbar" aria-hidden="true"><i style="width:${(r.p[i] / maxP) * 100}%;background:${M[PROD].color}"></i></span></td>
+        <td class="num">${rub(r.loss[i])}</td>
+        <td><ul class="reasons">${r.why[i].map((w) => `<li>${esc(D.why_dict[w])}</li>`).join("")}</ul></td>
+        <td class="${inOther ? "yes" : "no"}">${inOther ? "да" : "нет"}</td>
+        <td data-outcome ${st.reveal ? "" : "hidden"}>${out}</td></tr>`;
+    }).join("");
+    $("table-foot").textContent = st.mode === "model"
+      ? "Порядок: по ожидаемой потере (риск × оставшиеся платежи). Внутри одного потока и дня платежи у всех равны, поэтому порядок совпадает с порядком по риску."
+      : `Порядок: по числу дней без заходов. Правило флагует всех, кто не заходил ${D.rule_days}+ дней. При фиксированном бюджете берутся те, кто не заходил дольше всех.`;
+  }
+  selS.addEventListener("change", () => { st.stream = selS.value; fillT(); renderList(); });
+  selT.addEventListener("change", () => { st.t = +selT.value; renderList(); });
+  rng.addEventListener("input", () => { st.budget = +rng.value / 100; $("budget-val").textContent = rng.value + "%"; renderList(); });
+  function setMode(m) { st.mode = m; $("mode-model").setAttribute("aria-pressed", m === "model"); $("mode-rule").setAttribute("aria-pressed", m === "rule"); renderList(); }
+  $("mode-model").addEventListener("click", () => setMode("model"));
+  $("mode-rule").addEventListener("click", () => setMode("rule"));
+  $("reveal").addEventListener("click", () => {
+    st.reveal = !st.reveal; $("reveal").setAttribute("aria-pressed", st.reveal);
+    $("reveal").textContent = st.reveal ? "Скрыть исход" : "Показать, что было на самом деле"; renderList();
+  });
+  fillT(); renderList();
+
+  // ---------- 3. cases ----------
+  const CASE = {
+    quiet: { title: "Тихий уход", say: (c) => `Ученик заходил ${days(c.rule_verdict.days_since_click)} назад, поэтому правило его не видит. Модель замечает, что учёба проседает, и ставит его на ${c.model_verdict.rank}-е место в потоке. Здесь и живёт ML-ценность.` },
+    obvious: { title: "Явный уход", say: (c) => `Ученик не заходил ${days(c.rule_verdict.days_since_click)}, и правило его ловит. Модель тоже ставит его в начало списка: то, что ловит правило, она не теряет.` },
+    false_alarm: { title: "Ложная тревога", say: (c) => `Модель поставила ученика на ${c.model_verdict.rank}-е место из ${num(c.model_verdict.n)}, а он остался и сдал курс. Удерживающее действие ушло бы тому, кто и так бы остался. Это цена ошибки.` },
+    miss: { title: "Ошибка: уход без сигналов", say: (c) => `Активность и баллы на уровне середины потока, пропусков нет, риск по модели ${pct(c.model_verdict.risk)}. Ухода не видно ни по кликам, ни по оценкам: причина вне данных. Это предел прототипа.` },
+  };
+  function caseChart(c, slotW) {
+    const W = Math.max(300, Math.round(slotW || 600)), H = 250, ml = 40, mr = 12, mt = 26, clickH = 120, gap = 26, gradeH = 56;
+    const x0 = Math.min(c.weeks[0] * 7, 0), x1 = c.length;
+    const sx = (d) => ml + ((d - x0) / (x1 - x0)) * (W - ml - mr);
+    const maxC = Math.max(...c.clicks, 1);
+    const yC = (v) => mt + clickH - (v / maxC) * clickH;
+    const gTop = mt + clickH + gap, yG = (s) => gTop + gradeH - (s / 100) * gradeH;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img", "aria-label": `Клики по неделям и оценки ученика ${c.id}` });
+    // unseen region
+    el("rect", { x: sx(c.t), y: mt - 18, width: sx(x1) - sx(c.t), height: H - mt - 2, fill: "var(--sunk)" }, svg);
+    text(svg, sx(c.t) + 6, mt - 6, sx(x1) - sx(c.t) >= 140 ? "модель этого не видела" : "не видела", { class: "lbl", "font-size": 11 });
+    // axes
+    const ax = el("g", { class: "axis" }, svg);
+    el("line", { x1: ml, x2: W - mr, y1: mt + clickH, y2: mt + clickH }, ax);
+    el("line", { x1: ml, x2: W - mr, y1: gTop + gradeH, y2: gTop + gradeH }, ax);
+    text(svg, ml - 6, mt + 4, num(maxC), { "text-anchor": "end", "font-size": 10 });
+    text(svg, ml - 6, mt + clickH, "0", { "text-anchor": "end", "font-size": 10 });
+    text(svg, ml - 6, gTop + 4, "100", { "text-anchor": "end", "font-size": 10 });
+    text(svg, ml - 6, gTop + gradeH, "0", { "text-anchor": "end", "font-size": 10 });
+    for (let d = 0; d <= x1; d += 30) text(svg, sx(d), H - 4, d, { "text-anchor": "middle", "font-size": 10 });
+    // clicks
+    c.weeks.forEach((w, i) => {
+      const d = w * 7, v = c.clicks[i]; if (!v) return;
+      const after = d + 7 > c.t;
+      el("rect", { x: sx(d) + 0.6, y: yC(v), width: Math.max(1, sx(d + 7) - sx(d) - 1.2), height: mt + clickH - yC(v), rx: 1.5, fill: "var(--bar)", opacity: after ? 0.28 : 0.9 }, svg);
+    });
+    // grades
+    c.grades.forEach((g) => {
+      const after = (g.submitted !== null ? g.submitted : g.due) >= c.t;
+      if (g.submitted !== null && g.score !== null) el("circle", { cx: sx(g.submitted), cy: yG(g.score), r: 4.5, fill: "var(--accent)", opacity: after ? 0.3 : 1 }, svg);
+      else if (g.submitted === null) el("circle", { cx: sx(g.due), cy: yG(0), r: 4.5, fill: "var(--surface)", stroke: "var(--accent)", "stroke-width": 1.6, opacity: after ? 0.35 : 1 }, svg);
+    });
+    // t line
+    el("line", { x1: sx(c.t), x2: sx(c.t), y1: mt - 18, y2: gTop + gradeH, stroke: "var(--ink)", "stroke-width": 2 }, svg);
+    text(svg, sx(c.t) - 6, mt - 6, `t = ${c.t}`, { "text-anchor": "end", class: "lbl", "font-size": 11, "font-weight": 600 });
+    if (c.leave_day !== null) {
+      el("line", { x1: sx(c.leave_day), x2: sx(c.leave_day), y1: mt + 4, y2: gTop + gradeH, stroke: "var(--bad)", "stroke-width": 2, "stroke-dasharray": "4 3" }, svg);
+      text(svg, sx(c.leave_day) + 5, mt + 14, `ушёл, день ${c.leave_day}`, { "font-size": 11, fill: "var(--bad)" });
+    }
+    text(svg, ml, mt + clickH + 16, "клики за неделю ↑ · баллы за задания ↓", { "font-size": 10 });
+    return svg;
+  }
+  const caseLegend = `<div class="legend">
+      <span>${swatch("var(--bar)", false, "bar")}клики за неделю</span>
+      <span>${swatch("var(--accent)", false, "dot")}балл за задание</span>
+      <span>${swatch("var(--accent)", false, "ring")}пропущенное задание (на дату срока)</span>
+      <span>${swatch("var(--ink)", false, "vline")}день прогноза</span>
+      <span>${swatch("var(--bad)", true, "vline")}день ухода</span></div>`;
+  const grid = $("cases-grid"), caseSlots = [];
+  D.cases.forEach((c) => {
+    const cfg = CASE[c.case], mv = c.model_verdict, rv = c.rule_verdict;
+    const card = document.createElement("article");
+    card.className = "case"; card.dataset.case = c.case;
+    const outcome = c.y ? `<span class="pill bad">${esc(c.outcome)}</span>` : `<span class="pill ok">${esc(c.outcome)}</span>`;
+    card.innerHTML = `
+      <div class="case-head">
+        <div class="title-row"><h3>${cfg.title}</h3>${outcome}</div>
+        <div class="case-meta">ученик ${c.id} · поток ${c.stream} · день ${c.t}${c.days_to_leave !== null ? ` · ушёл через ${days(c.days_to_leave)}` : ""}</div>
+      </div>
+      ${caseLegend}
+      <div class="chart-slot"></div>
+      <div class="verdicts">
+        <div class="verdict"><span class="who">Правило «${D.rule_days} дней»</span><span class="what">${rv.in_list ? "в списке" : "не в списке"}</span><span class="detail">${days(rv.days_since_click)} без заходов; место ${num(rv.rank)} из ${num(rv.n)}</span></div>
+        <div class="verdict"><span class="who">Модель</span><span class="what">риск ${pct(mv.risk)}</span><span class="detail">место ${num(mv.rank)} из ${num(mv.n)} в потоке; ${mv.in_list ? "в" : "вне"} топ-${pct(D.top, 0)}</span></div>
+      </div>
+      <div class="why"><h4>Три причины, которые модель покажет куратору</h4><ul class="reasons">${c.reasons.map((r) => `<li>${esc(r.text)}</li>`).join("")}</ul></div>
+      <p class="takeaway">${cfg.say(c)}</p>
+      <p class="small">Правило отбора: ${esc(c.rule)}.</p>`;
+    caseSlots.push([card.querySelector(".chart-slot"), c]);
+    grid.appendChild(card);
+  });
+
+  // ---------- 4. evidence ----------
+  const L = M[LGBM];
+  $("ev-lede").textContent = `Продуктовая модель ловит ${pct(P.loss_caught_top20)} потери против ${pct(B.loss_caught_top20)} у правила. Таргет по приросту выполнен с запасом даже по нижней границе интервала. Запас времени ровно на границе таргета, а безопасность на OULAD проверить нельзя.`;
+  const STATUS = { ok: "выполнено", warn: "на грани", bad: "не выполнено", na: "не проверялось" };
+  const pill = (s) => `<span class="pill ${s}">${STATUS[s]}</span>`;
+  const leadStatus = (v) => (v > 14 ? "ok" : v === 14 ? "warn" : "bad");
+  const stab = (m) => `${num(m.stability.worst_gap_pp, 1)} п. п. (день ${m.stability.worst_t})`;
+  const evRows = [
+    ["Прирост доли пойманной потери в топ-20% к правилу", "≥ +20% относительно",
+      `${spct(P.gain_ci[1])} <span class="small">[${spct(P.gain_ci[0])}; ${spct(P.gain_ci[2])}]</span>`,
+      `${spct(L.gain_ci[1])} <span class="small">[${spct(L.gain_ci[0])}; ${spct(L.gain_ci[2])}]</span>`,
+      P.gain_ci[0] >= D.bootstrap.target_gain ? "ok" : "bad", "статус по нижней границе 95% ДИ"],
+    ["PR-AUC", `выше правила (${num(B.pr_auc, 3)})`, num(P.pr_auc, 3), num(L.pr_auc, 3), P.pr_auc > B.pr_auc ? "ok" : "bad", ""],
+    ["Медиана запаса времени у пойманных", "≥ 14 дней", days(P.median_lead_days), days(L.median_lead_days), leadStatus(P.median_lead_days), `у правила ${days(B.median_lead_days)}`],
+    ["Калибровка: макс. разрыв по децилям", "≤ 5 п. п.", `${num(P.calib_max_gap_pp, 2)} п. п.`, `${num(L.calib_max_gap_pp, 2)} п. п.`, P.calib_max_gap_pp <= 5 ? "ok" : "bad", ""],
+    ["Устойчивость по снимкам", "ни один снимок не хуже среднего больше чем на 10 п. п.", stab(P), stab(L), P.stability.worst_gap_pp <= 10 ? "ok" : "bad", "худший снимок относительно доли в топ-20% по всем снимкам"],
+    ["Безопасность: «уставшим» 0 напоминаний; родителю 0 сообщений с ответами ребёнка", "0", "—", "—", "na", "в OULAD нет таких данных, проверка на Gate 5"],
+    ["Задержка и стоимость", "пакетный расчёт, минуты на поток", `${num(P.predict_ms_per_1000, 1)} мс на 1000 прогнозов`, `${num(L.predict_ms_per_1000, 1)} мс на 1000 прогнозов`, "ok", "CPU ноутбука; поток в 2 000 учеников считается за доли секунды"],
+  ];
+  $("ev-table").innerHTML = `<thead><tr><th>Что</th><th>Таргет Gate 2</th><th>LogReg (продукт)</th><th>LightGBM: активность + оценки</th><th>Статус</th></tr></thead><tbody>` +
+    evRows.map((r) => `<tr><td>${r[0]}${r[5] ? `<span class="note">${r[5]}</span>` : ""}</td><td>${r[1]}</td><td class="num" data-check="ev">${r[2]}</td><td class="num">${r[3]}</td><td>${pill(r[4])}</td></tr>`).join("") + "</tbody>";
+
+  // gain curve
+  modelLegend("lg-gain", ORDER);
+  function drawGain() {
+    const box = $("ch-gain"); box.innerHTML = "";
+    const W = Math.max(300, Math.round(box.clientWidth || 960)), H = Math.round(Math.min(460, Math.max(300, W * 0.5))), ml = 44, mr = 12, mt = 14, mb = 44;
+    const sx = (v) => ml + v * (W - ml - mr), sy = (v) => mt + (1 - v) * (H - mt - mb);
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img", "aria-label": "Кривая: доля учеников в списке против доли пойманной потери" });
+    const g = el("g", { class: "grid" }, svg);
+    for (let v = 0; v <= 1.0001; v += 0.2) {
+      el("line", { x1: ml, x2: W - mr, y1: sy(v), y2: sy(v) }, g);
+      text(svg, ml - 8, sy(v) + 4, pct(v, 0), { "text-anchor": "end" });
+      text(svg, sx(v), H - mb + 18, pct(v, 0), { "text-anchor": "middle" });
+    }
+    text(svg, (ml + W - mr) / 2, H - 4, "доля учеников в списке", { "text-anchor": "middle", class: "lbl" });
+    el("line", { x1: sx(0), y1: sy(0), x2: sx(1), y2: sy(1), stroke: "var(--muted)", "stroke-dasharray": "2 4" }, svg);
+    const marks = [[D.top, `бюджет ${pct(D.top, 0)}`], [D.rule_natural_load, `нагрузка правила ${pct(D.rule_natural_load, 0)}`]];
+    marks.forEach(([v, s], i) => {
+      el("line", { x1: sx(v), x2: sx(v), y1: mt, y2: H - mb, stroke: "var(--ink-2)", "stroke-width": 1 }, svg);
+      text(svg, sx(v) + 5, H - mb - 8 - i * 16, s, { class: "lbl", "font-size": 11 });
+    });
+    const n = M[ORDER[0]].curve.length;
+    ORDER.forEach((k) => {
+      const d = M[k].curve.map((v, i) => `${i ? "L" : "M"}${sx(i / (n - 1)).toFixed(1)},${sy(v).toFixed(1)}`).join("");
+      el("path", { d, fill: "none", stroke: M[k].color, "stroke-width": 2.5, "stroke-linejoin": "round", "stroke-dasharray": k === BASE ? "6 4" : "none" }, svg);
+    });
+    const cross = el("line", { y1: mt, y2: H - mb, stroke: "var(--ink)", "stroke-width": 1, opacity: 0 }, svg);
+    const dots = ORDER.map((k) => el("circle", { r: 4.5, fill: M[k].color, stroke: "var(--surface)", "stroke-width": 2, opacity: 0 }, svg));
+    const hit = el("rect", { x: ml, y: mt, width: W - ml - mr, height: H - mt - mb, fill: "transparent" }, svg);
+    hit.addEventListener("pointermove", (e) => {
+      const r = svg.getBoundingClientRect();
+      const fx = ((e.clientX - r.left) / r.width * W - ml) / (W - ml - mr);
+      const i = Math.max(0, Math.min(n - 1, Math.round(fx * (n - 1)))), xv = i / (n - 1);
+      cross.setAttribute("x1", sx(xv)); cross.setAttribute("x2", sx(xv)); cross.setAttribute("opacity", 0.5);
+      ORDER.forEach((k, j) => { dots[j].setAttribute("cx", sx(xv)); dots[j].setAttribute("cy", sy(M[k].curve[i])); dots[j].setAttribute("opacity", 1); });
+      showTip(`В списке <b>${pct(xv, 0)}</b> учеников<br>` + ORDER.map((k) => `<span class="sw" style="background:${M[k].color}"></span>${short[k]}: <b>${pct(M[k].curve[i])}</b>`).join("<br>"), e.clientX, e.clientY);
+    });
+    hit.addEventListener("pointerleave", () => { hideTip(); cross.setAttribute("opacity", 0); dots.forEach((d) => d.setAttribute("opacity", 0)); });
+    box.appendChild(svg);
+  }
+
+  // by snapshot
+  modelLegend("lg-t", ORDER);
+  function drawT() {
+    const box = $("ch-t"); box.innerHTML = "";
+    const W = Math.max(300, Math.round(box.clientWidth || 520)), H = Math.round(Math.min(340, Math.max(260, W * 0.62))), ml = 42, mr = 12, mt = 12, mb = 40;
+    const ts = D.snapshots;
+    const all = ORDER.flatMap((k) => ts.map((t) => M[k].loss_caught_by_t[t]));
+    const lo = Math.floor((Math.min(...all) - 0.03) * 20) / 20, hi = Math.ceil((Math.max(...all) + 0.03) * 20) / 20;
+    const sx = (i) => ml + 12 + i * (W - ml - mr - 24) / (ts.length - 1), sy = (v) => mt + (hi - v) / (hi - lo) * (H - mt - mb);
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, class: "chart", role: "img", "aria-label": "Доля пойманной потери в топ-20% по дням снимков" });
+    const g = el("g", { class: "grid" }, svg);
+    for (let v = lo; v <= hi + 1e-9; v += 0.1) { el("line", { x1: ml, x2: W - mr, y1: sy(v), y2: sy(v) }, g); text(svg, ml - 8, sy(v) + 4, pct(v, 0), { "text-anchor": "end" }); }
+    ts.forEach((t, i) => text(svg, sx(i), H - mb + 18, t, { "text-anchor": "middle" }));
+    text(svg, (ml + W - mr) / 2, H - 4, "день курса на момент снимка", { "text-anchor": "middle", class: "lbl" });
+    ORDER.forEach((k) => {
+      const d = ts.map((t, i) => `${i ? "L" : "M"}${sx(i)},${sy(M[k].loss_caught_by_t[t])}`).join("");
+      el("path", { d, fill: "none", stroke: M[k].color, "stroke-width": 2.5, "stroke-dasharray": k === BASE ? "6 4" : "none" }, svg);
+      ts.forEach((t, i) => {
+        const v = M[k].loss_caught_by_t[t];
+        el("circle", { cx: sx(i), cy: sy(v), r: 4, fill: M[k].color, stroke: "var(--surface)", "stroke-width": 1.5 }, svg);
+        const h = el("circle", { cx: sx(i), cy: sy(v), r: 11, fill: "transparent" }, svg);
+        h.addEventListener("pointermove", (e) => showTip(`<span class="sw" style="background:${M[k].color}"></span>${short[k]}<br>день ${t}: <b>${pct(v)}</b>`, e.clientX, e.clientY));
+        h.addEventListener("pointerleave", hideTip);
+      });
+    });
+    box.appendChild(svg);
+    $("t-note").textContent = `Доля пойманной потери в топ-${pct(D.top, 0)} на каждом снимке. Худший снимок продуктовой модели отстаёт от её среднего на ${num(P.stability.worst_gap_pp, 1)} п. п.`;
+  }
+
+  // forest
+  function drawForest() {
+    const box = $("ch-forest"); box.innerHTML = "";
+    const lo = -0.1, hi = 0.6, W = Math.max(280, Math.round(box.clientWidth || 500)), H = 34, ml = 14, mr = 18;
+    const sx = (v) => ml + (v - lo) / (hi - lo) * (W - ml - mr);
+    function strip(ci, color, withAxis) {
+      const svg = el("svg", { viewBox: `0 0 ${W} ${withAxis ? H + 18 : H}`, class: "chart", role: "img", "aria-label": "Интервал" });
+      for (let v = 0; v <= hi + 1e-9; v += 0.1) el("line", { x1: sx(v), x2: sx(v), y1: 2, y2: H - 2, stroke: "var(--line)" }, svg);
+      el("line", { x1: sx(0), x2: sx(0), y1: 0, y2: H, stroke: "var(--ink-2)", "stroke-width": 1.2 }, svg);
+      el("line", { x1: sx(D.bootstrap.target_gain), x2: sx(D.bootstrap.target_gain), y1: 0, y2: H, stroke: "var(--ink)", "stroke-width": 1.5, "stroke-dasharray": "4 3" }, svg);
+      el("line", { x1: sx(ci[0]), x2: sx(ci[2]), y1: H / 2, y2: H / 2, stroke: color, "stroke-width": 5, "stroke-linecap": "round" }, svg);
+      el("circle", { cx: sx(ci[1]), cy: H / 2, r: 7, fill: color, stroke: "var(--surface)", "stroke-width": 2 }, svg);
+      if (withAxis) for (let v = 0; v <= hi + 1e-9; v += 0.1) text(svg, sx(v), H + 14, spct(v), { "text-anchor": "middle", "font-size": 11 });
+      return svg;
+    }
+    box.insertAdjacentHTML("beforeend", `<div class="legend"><span>${swatch("var(--ink)", true, "vline")}цель Gate 2: ${spct(D.bootstrap.target_gain)}</span><span>${swatch("var(--ink-2)", false, "vline")}0: на уровне правила</span><span>точка — медиана, линия — 95% ДИ, цвет — модель</span></div>`);
+    const rows = ORDER.filter((k) => k !== BASE);
+    rows.forEach((k, i) => {
+      const m = M[k], row = document.createElement("div");
+      row.className = "f-row";
+      row.innerHTML = `<div class="f-lab"><span>${swatch(m.color)} ${esc(m.label)}</span><span class="f-val">${spct(m.gain_ci[1])} [${spct(m.gain_ci[0])}; ${spct(m.gain_ci[2])}] · P(≥ цели) = ${pct(m.p_gain_ge_target, 0)}</span></div>`;
+      row.appendChild(strip(m.gain_ci, m.color, i === rows.length - 1));
+      box.appendChild(row);
+    });
+    const v = D.bootstrap.logreg_vs_lgbm, sep = document.createElement("div");
+    sep.className = "f-row f-sep";
+    sep.innerHTML = `<div class="f-lab"><span>LogReg против LightGBM (те же признаки)</span><span class="f-val">${spct(v[1], 1)} [${spct(v[0], 1)}; ${spct(v[2], 1)}]</span></div>
+      <p class="small">Разница в доле пойманной потери между двумя моделями с одинаковыми признаками. Интервал накрывает ноль: модели неразличимы.</p>`;
+    box.appendChild(sep);
+    $("forest-note").textContent = `Бутстрап по ученикам, ${num(D.bootstrap.B)} повторов: один ученик входит в несколько снимков, поэтому пересэмплируются ученики, а не строки.`;
+  }
+
+  // charts are drawn at their box width so that 12px labels stay 12px on phones and desktops
+  function drawAll() {
+    caseSlots.forEach(([slot, c]) => { slot.innerHTML = ""; slot.appendChild(caseChart(c, slot.clientWidth)); });
+    drawGain(); drawT(); drawForest();
+  }
+  drawAll();
+  let lastW = window.innerWidth, rz = 0;
+  window.addEventListener("resize", () => {
+    clearTimeout(rz);
+    rz = setTimeout(() => { if (window.innerWidth !== lastW) { lastW = window.innerWidth; drawAll(); } }, 150);
+  });
+
+  $("built").textContent = `Страница собрана ${D.built} из артефактов пайплайна (results.json, bootstrap.json, снимки 2014 года).`;
+})();
+</script>

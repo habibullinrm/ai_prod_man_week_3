@@ -1,0 +1,5 @@
+model,loss_caught_top20,recall_top20,precision_top20,lift_top20,pr_auc,roc_auc,median_lead_days,calib_max_gap_pp,loss_caught_at_rule_budget,gain_vs_baseline
+baseline_7days,0.3624,0.3626,0.055,1.81,0.0407,0.6199,13.0,,0.5413,0.0
+lgbm_activity,0.3628,0.3787,0.0575,1.89,0.0555,0.6727,14.0,2.04,0.5224,0.001
+lgbm_activity_grades,0.5081,0.5127,0.0778,2.56,0.0859,0.7582,14.0,0.95,0.6834,0.402
+logreg_activity_grades,0.5086,0.509,0.0773,2.55,0.0907,0.7544,14.0,0.67,0.6825,0.403
